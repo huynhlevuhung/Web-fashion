@@ -14,6 +14,7 @@ export default function Products() {
   const [tagFilter, setTagFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);

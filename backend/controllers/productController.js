@@ -46,33 +46,52 @@ const productController = {
 
   // READ - ALL
   
-   getAllProducts: async (req, res) => {
+  // READ - ALL (với filter + phân trang chuẩn)
+getAllProducts: async (req, res) => {
   try {
     const curPage = parseInt(req.query.curPage) || 1;
+    const ITEMS_PER_PAGE = 9;
+
     const tagId = req.query.tagId;
     const name = req.query.name || "";
-    const query = {};
 
-    if (tagId) query.tags = { $in: [tagId] };
-    if (name) query.productName = { $regex: name, $options: "i" };
+    // 🔍 1️⃣ Tạo object filter
+    const filter = {};
+    if (tagId) filter.tags = { $in: [tagId] };
+    if (name) filter.productName = { $regex: name, $options: "i" };
 
-    const itemQuantity = await ProductModel.countDocuments(query);
+    // 🧮 2️⃣ Đếm tổng số sản phẩm sau khi lọc
+    const itemQuantity = await ProductModel.countDocuments(filter);
     const numberOfPages = Math.ceil(itemQuantity / ITEMS_PER_PAGE);
 
-    if (curPage > numberOfPages && numberOfPages > 0) {
-      return res.status(400).send({ message: "Invalid page number" });
-    }
+    // 🧠 Nếu trang vượt quá số trang thì báo lỗi
+    let currentPage = curPage;
+if (curPage > numberOfPages && numberOfPages > 0) {
+  currentPage = 1; // ✅ reset về trang 1 nếu vượt quá tổng số trang
+}
 
-    const data = await ProductModel.find(query)
+
+    // 📦 3️⃣ Lấy dữ liệu đã lọc + phân trang
+    const data = await ProductModel.find(filter)
       .populate("tags")
-      .limit(ITEMS_PER_PAGE)
-      .skip((curPage - 1) * ITEMS_PER_PAGE);
+      .skip((currentPage - 1) * ITEMS_PER_PAGE)
 
-    res.status(200).send({ message: "Success", data, numberOfPages, curPage });
+      .limit(ITEMS_PER_PAGE)
+      .sort({ createdAt: -1 });
+
+    // ✅ 4️⃣ Trả kết quả
+    res.status(200).send({
+      message: "Success",
+      data,
+      numberOfPages,
+      curPage: currentPage, 
+      totalItems: itemQuantity,
+    });
   } catch (error) {
     res.status(500).send({ message: "Error", error: error.message });
   }
 },
+
 
 getAllProductsNoPaging: async (req, res) => {
   try {

@@ -10,12 +10,14 @@ import MyAccount from "./pages/MyAccount";
 import Profile from "./pages/Profile";
 import DashboardPage from "./pages/DashboardPage";
 import UserPage from "./pages/UserPage";
+import ProductPage from "./pages/ProductPage";
+
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/test" element={<Home />} />
+      <Route path="/products" element={<ProductPage />} />
 
       {/* Các route public (chỉ vào được nếu CHƯA đăng nhập) */}
      <Route
