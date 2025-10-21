@@ -1,55 +1,71 @@
-// src/components/ProductList.jsx
+// src/components/ProductPage/ProductList.jsx
 import React, { useEffect, useState } from "react";
 import api from "@/utils/api";
 import { Heart, ShoppingCart, Eye } from "lucide-react";
+import ProductDetailModal from "./ProductDetailModal";
 
-const ProductList = ({ filters }) => {
+const ProductList = ({ filters, onCounts }) => {
   const [products, setProducts] = useState([]);
   const [curPage, setCurPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(16);
-  const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  
 
-  // Responsive items per page
+  // 🧩 Cập nhật itemsPerPage theo kích thước màn hình
   useEffect(() => {
-    const updateItemsPerPage = () => {
-      if (window.innerWidth < 640) setItemsPerPage(4);
-      else if (window.innerWidth < 1024) setItemsPerPage(9);
-      else setItemsPerPage(16);
+    const handleResize = () => {
+      if (window.innerWidth >= 1280) setItemsPerPage(16); // 4x4
+      else if (window.innerWidth >= 1024) setItemsPerPage(12); // 3x4
+      else setItemsPerPage(8); // 2x4
     };
-    updateItemsPerPage();
-    window.addEventListener("resize", updateItemsPerPage);
-    return () => window.removeEventListener("resize", updateItemsPerPage);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch products with filters
+  // 🧠 Fetch sản phẩm từ BE
+  const fetchProducts = async (page = 1) => {
+    setLoading(true);
+    
+    try {
+      const params = new URLSearchParams({
+        curPage: page,
+        ...Object.fromEntries(Object.entries(filters || {}).filter(([_, v]) => v !== "" && v != null)),
+      });
+
+      const res = await api.get(`/products?${params.toString()}`);
+      const data = res.data?.data || [];
+
+
+        
+      setProducts(Array.isArray(data) ? data : []);
+      setCurPage(res.data?.curPage ?? 1);
+      setTotalPages(res.data?.numberOfPages ?? 1);
+
+   const visibleCount = data.length;
+    const totalCount = res.data?.totalItems ?? data.length;
+
+  onCounts({ visibleCount, totalCount });
+
+    } catch (err) {
+      console.error("Lỗi khi lấy sản phẩm:", err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get("/products/all", { params: filters });
-        const data =
-          res?.data?.data ??
-          res?.data?.products ??
-          (Array.isArray(res?.data) ? res.data : []);
-        setProducts(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Lỗi khi lấy sản phẩm:", err);
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-    setCurPage(1);
+    fetchProducts(1);
   }, [filters]);
 
-  const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
-  const startIndex = (curPage - 1) * itemsPerPage;
-  const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
-
+  // 🧭 Chuyển trang
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
     setCurPage(page);
+    fetchProducts(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -71,21 +87,26 @@ const ProductList = ({ filters }) => {
     <div className="flex flex-col gap-6">
       {/* Danh sách sản phẩm */}
       <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-        {currentProducts.map((product) => (
-          <ProductCard key={product._id ?? product.id} product={product} />
+        {products.map((product) => (
+          <ProductCard
+  key={product._id ?? product.id}
+  product={product}
+  onOpenDetail={(p) => setSelectedProduct(p)} 
+/>
+
         ))}
       </div>
 
-      {/* Pagination */}
+      {/* Phân trang */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-4 select-none">
+        <div className="flex justify-center items-center gap-2 mt-6 select-none">
           <button
             onClick={() => handlePageChange(curPage - 1)}
             disabled={curPage === 1}
-            className={`px-3 py-1 rounded ${
+            className={`px-3 py-1 rounded border ${
               curPage === 1
                 ? "text-gray-400 cursor-not-allowed"
-                : "hover:bg-gray-200"
+                : "hover:bg-gray-100"
             }`}
           >
             « Trước
@@ -95,10 +116,10 @@ const ProductList = ({ filters }) => {
             <button
               key={num}
               onClick={() => handlePageChange(num)}
-              className={`px-3 py-1 rounded ${
+              className={`px-3 py-1 rounded border ${
                 curPage === num
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-blue-100 text-gray-700"
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "hover:bg-gray-50 text-gray-700"
               }`}
             >
               {num}
@@ -108,28 +129,37 @@ const ProductList = ({ filters }) => {
           <button
             onClick={() => handlePageChange(curPage + 1)}
             disabled={curPage === totalPages}
-            className={`px-3 py-1 rounded ${
+            className={`px-3 py-1 rounded border ${
               curPage === totalPages
                 ? "text-gray-400 cursor-not-allowed"
-                : "hover:bg-gray-200"
+                : "hover:bg-gray-100"
             }`}
           >
             Sau »
           </button>
         </div>
       )}
+
+       {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
+
   );
 };
 
-// Component hiển thị từng sản phẩm
-const ProductCard = ({ product }) => {
+
+
+// 🧩 Product Card
+const ProductCard = ({ product, onOpenDetail }) => {
   const resolveImageUrl = (url) => {
     if (!url) return "/placeholder.jpg";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("http")) return url;
     const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
     return `${BASE_URL}/${url.replace(/^\/+/, "")}`;
-    
   };
 
   const [currentImg, setCurrentImg] = useState(
@@ -154,11 +184,15 @@ const ProductCard = ({ product }) => {
   if (product.quantity <= 0) stockBadge = { text: "Hết hàng", color: "bg-red-500" };
   else if (product.quantity <= 5) stockBadge = { text: "Sắp hết", color: "bg-yellow-500" };
 
-  
-
   return (
-    <div className="bg-white shadow-md rounded-xl overflow-hidden group relative hover:-translate-y-1 transition-all duration-300">
+     <div
+      className="bg-white shadow-md rounded-xl overflow-hidden group relative hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+      onClick={() => onOpenDetail(product)}
+    >
+       
       <div className="relative w-full h-56 overflow-hidden">
+        
+        
         <img
           src={currentImg}
           alt={product.productName}
@@ -169,8 +203,9 @@ const ProductCard = ({ product }) => {
           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
         />
 
-        {/* Overlay hover Eye */}
-        <div className="absolute inset-0 pointer-events-none bg-black opacity-0 group-hover:opacity-50 flex items-center justify-center transition-opacity duration-300 ">
+        {/* Overlay Eye khi hover */}
+        <div className="absolute inset-0 pointer-events-none bg-black opacity-0 group-hover:opacity-50 flex items-center justify-center transition-opacity duration-300">
+          
           <Eye
             size={32}
             className="text-white opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all duration-300"
@@ -185,11 +220,12 @@ const ProductCard = ({ product }) => {
         </span>
       </div>
 
-      {/* Nội dung sản phẩm */}
+      {/* Thông tin sản phẩm */}
       <div className="p-3 flex flex-col gap-1">
         <h3 className="font-semibold text-gray-800 line-clamp-1">
           {product.productName}
         </h3>
+
         {/* Tag loại */}
         <div className="flex flex-wrap gap-1 mt-1">
           {product.tags?.length ? (
@@ -206,7 +242,7 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Giá và icon */}
+        {/* Giá + Icon */}
         <div className="flex items-center justify-between mt-3">
           <div className="text-blue-600 font-semibold text-base">
             {new Intl.NumberFormat("vi-VN").format(product.price)}₫

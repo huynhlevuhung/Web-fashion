@@ -9,7 +9,7 @@ const SearchBar = ({
   loading = false,
 }) => {
   const [searchValue, setSearchValue] = useState("");
-  const [sortValue, setSortValue] = useState("default");
+  const [sortValue, setSortValue] = useState(""); // ✅ rỗng thay vì "default"
 
   // ⏳ debounce search
   useEffect(() => {
@@ -54,11 +54,11 @@ const SearchBar = ({
           }}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 cursor-pointer focus:ring-1 focus:ring-gray-300 focus:border-gray-400 transition-all hover:bg-gray-50"
         >
-          <option value="default">Mặc định</option>
-          <option value="price-asc">Giá: thấp → cao</option>
-          <option value="price-desc">Giá: cao → thấp</option>
-          <option value="name-asc">Tên: A–Z</option>
-          <option value="name-desc">Tên: Z–A</option>
+          <option value="">Mặc định</option> {/* ✅ sửa value */}
+          <option value="priceAsc">Giá: thấp → cao</option>
+          <option value="priceDesc">Giá: cao → thấp</option>
+          <option value="nameAsc">Tên: A–Z</option>
+          <option value="nameDesc">Tên: Z–A</option>
         </select>
       </div>
     </div>

@@ -1,10 +1,9 @@
 import ProductModel from "../models/ProductModel.js";
-import "../models/StoreModel.js";
-import "../models/TagModel.js";
-import TagModel from "../models/TagModel.js";
-import "../models/AreaModel.js";
 
-const ITEMS_PER_PAGE = 9;
+import TagModel from "../models/TagModel.js";
+
+
+
 const productController = {
   // CREATE
   createProduct: async (req, res) => {
@@ -44,53 +43,123 @@ const productController = {
     }
   },
 
-  // READ - ALL
   
   // READ - ALL (với filter + phân trang chuẩn)
 getAllProducts: async (req, res) => {
   try {
     const curPage = parseInt(req.query.curPage) || 1;
-    const ITEMS_PER_PAGE = 9;
+    const ITEMS_PER_PAGE = 16;
 
-    const tagId = req.query.tagId;
-    const name = req.query.name || "";
+    const {
+      tagName,     // 🔹 lọc theo tên tag
+      name = "",
+      sex,
+      minPrice,
+      maxPrice,
+      stockStatus, // "Hết hàng" | "Sắp hết" | "Còn hàng"
+      sort,        // FE gửi key "sort" (không phải "sortBy")
+    } = req.query;
 
-    // 🔍 1️⃣ Tạo object filter
+    // 1️⃣ Tạo object filter
     const filter = {};
-    if (tagId) filter.tags = { $in: [tagId] };
+
+    // 🔹 Lọc theo tag (từ FE gửi có thể là tagName hoặc tagId)
+    if (tagName) {
+      // Nếu FE gửi _id tag thay vì name, ta kiểm tra hợp lệ
+      if (tagName.match(/^[0-9a-fA-F]{24}$/)) {
+        filter.tags = { $in: [tagName] };
+      } else {
+        const tag = await TagModel.findOne({
+          nameTag: { $regex: tagName, $options: "i" },
+        });
+        if (tag) {
+          filter.tags = { $in: [tag._id] };
+        } else {
+          return res.status(200).send({
+            message: "Success",
+            data: [],
+            numberOfPages: 0,
+            curPage: 1,
+            totalItems: 0,
+          });
+        }
+      }
+    }
+
+    // 🔹 Lọc theo tên sản phẩm
     if (name) filter.productName = { $regex: name, $options: "i" };
 
-    // 🧮 2️⃣ Đếm tổng số sản phẩm sau khi lọc
-    const itemQuantity = await ProductModel.countDocuments(filter);
-    const numberOfPages = Math.ceil(itemQuantity / ITEMS_PER_PAGE);
+    // 🔹 Lọc theo giới tính
+    if (sex) filter.sex = sex;
 
-    // 🧠 Nếu trang vượt quá số trang thì báo lỗi
-    let currentPage = curPage;
-if (curPage > numberOfPages && numberOfPages > 0) {
-  currentPage = 1; // ✅ reset về trang 1 nếu vượt quá tổng số trang
-}
+    // 🔹 Lọc theo giá
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
 
+    // 🔹 Lọc theo tình trạng kho
+    if (stockStatus) {
+      if (stockStatus === "Hết hàng") {
+        filter.quantity = { $lte: 0 };
+      } else if (stockStatus === "Sắp hết") {
+        filter.quantity = { $gt: 0, $lte: 5 };
+      } else if (stockStatus === "Còn hàng") {
+        filter.quantity = { $gt: 5 };
+      }
+    }
 
-    // 📦 3️⃣ Lấy dữ liệu đã lọc + phân trang
+    // 2️⃣ Tuỳ chọn sắp xếp
+    let sortOption = { createdAt: -1 };
+    if (sort) {
+      switch (sort) {
+        case "priceAsc":
+          sortOption = { price: 1 };
+          break;
+        case "priceDesc":
+          sortOption = { price: -1 };
+          break;
+        case "nameAsc":
+          sortOption = { productName: 1 };
+          break;
+        case "nameDesc":
+          sortOption = { productName: -1 };
+          break;
+        default:
+          sortOption = { createdAt: -1 };
+      }
+    }
+
+    // 3️⃣ Đếm tổng số sản phẩm sau lọc
+    const totalItems = await ProductModel.countDocuments(filter);
+    const numberOfPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    // 4️⃣ Reset trang nếu vượt giới hạn
+    const currentPage =
+      curPage > numberOfPages && numberOfPages > 0 ? 1 : curPage;
+
+    // 5️⃣ Lấy dữ liệu
     const data = await ProductModel.find(filter)
       .populate("tags")
+      .sort(sortOption)
       .skip((currentPage - 1) * ITEMS_PER_PAGE)
+      .limit(ITEMS_PER_PAGE);
 
-      .limit(ITEMS_PER_PAGE)
-      .sort({ createdAt: -1 });
-
-    // ✅ 4️⃣ Trả kết quả
+    // 6️⃣ Trả kết quả
     res.status(200).send({
       message: "Success",
       data,
       numberOfPages,
-      curPage: currentPage, 
-      totalItems: itemQuantity,
+      curPage: currentPage,
+      totalItems,
+      currentCount: data.length, // ✅ FE hiển thị “Hiển thị X / Y”
     });
   } catch (error) {
     res.status(500).send({ message: "Error", error: error.message });
   }
 },
+
 
 
 getAllProductsNoPaging: async (req, res) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Diamond,
   Star,
@@ -62,7 +63,7 @@ const Hero = () => {
   const sliderRef = useRef(null);
   const intervalRef = useRef(null);
   const totalImages = backgroundImages.length;
-
+const navigate = useNavigate();
   // Auto change background image
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -138,9 +139,12 @@ const Hero = () => {
           )}
           <h1 className="text-6xl md:text-9xl font-extrabold flex items-center gap-4 leading-tight drop-shadow-[3px_3px_8px_rgba(0,0,0,0.5)]">
             {textSlides[textIndex].bottom} {textSlides[textIndex].icon}
-            <button className="ml-4 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border border-white/40 bg-white/20 hover:bg-white/40 transition">
-              <ChevronRight className="text-white/80 md:w-8 md:h-8" />
-            </button>
+            <button
+  onClick={() => navigate("/products")}
+  className="ml-4 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border border-white/40 bg-white/20 hover:bg-white/40 transition"
+>
+  <ChevronRight className="text-white/80 md:w-8 md:h-8" />
+</button>
           </h1>
         </div>
       </div>

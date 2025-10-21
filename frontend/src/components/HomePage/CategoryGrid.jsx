@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "@/utils/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 const CategoryGrid = () => {
   const [tags, setTags] = useState([]);
   const [products, setProducts] = useState([]);
@@ -35,6 +35,11 @@ const CategoryGrid = () => {
     };
     fetchData();
   }, []);
+
+  const navigate = useNavigate();
+const handleTagClick = (tag) => {
+  navigate(`/products?tag=${tag._id}`);
+};
 
   // Random unique tags
   const getRandomUnique = (arr, count) => {
@@ -144,17 +149,19 @@ const CategoryGrid = () => {
           const imageUrl = getRandomImageByTag(tag._id);
           return (
             <div
-              key={tag._id}
-              className={`relative rounded-2xl overflow-hidden cursor-pointer flex-shrink-0 transition-all duration-700 ease-out card-item`}
-              style={{
-                width: "clamp(260px, 30vw, 420px)",
-                height: "clamp(180px, 25vw, 260px)",
-                backgroundColor: "#111",
-                ...getCardStyle(index),
-              }}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
+  key={tag._id}
+  className={`relative rounded-2xl overflow-hidden cursor-pointer flex-shrink-0 transition-all duration-700 ease-out card-item`}
+  style={{
+    width: "clamp(260px, 30vw, 420px)",
+    height: "clamp(180px, 25vw, 260px)",
+    backgroundColor: "#111",
+    ...getCardStyle(index),
+  }}
+  onMouseEnter={() => setHoveredIndex(index)}
+  onMouseLeave={() => setHoveredIndex(null)}
+  onClick={() => handleTagClick(tag)} // 👈 thêm dòng này
+>
+
               {/* Background Image */}
               <div
                 className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ${

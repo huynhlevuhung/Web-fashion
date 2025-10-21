@@ -1,5 +1,5 @@
 // src/components/DashboardPage/Product/Products.jsx
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "@/utils/api";
 import { Eye, Trash } from "lucide-react";
 
@@ -9,50 +9,45 @@ import DeleteProductModal from "./DeleteProductModal";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState("table"); // ✅ mặc định là table
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
-  const [deleteProduct, setDeleteProduct] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const itemsPerPage = 9;
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+  const [deleteProduct, setDeleteProduct] = useState(null);
 
-  // carousel indexes per product
-  const [imageIndexMap, setImageIndexMap] = useState({}); // { [productId]: idx }
+  const [imageIndexMap, setImageIndexMap] = useState({});
   const productsRef = useRef([]);
   const mountedRef = useRef(true);
 
-  // fetch products from BE (supports filters)
+  const ITEMS_PER_PAGE = 16;
+
+  // 🧠 Fetch sản phẩm
   const fetchProducts = async (page = 1, filters = {}) => {
     setLoading(true);
     try {
-      const { search: s, tagFilter: tag, statusFilter: status } = filters;
-      // build querystring similar to original style
-      let q = `/products?curPage=${page}&limit=${itemsPerPage}`;
-      if (s) q += `&search=${encodeURIComponent(s)}`;
-      if (tag) q += `&tag=${encodeURIComponent(tag)}`;
-      if (status) q += `&status=${encodeURIComponent(status)}`;
+      const { search: name, tagFilter: tagName, statusFilter: stockStatus } = filters;
+      const params = new URLSearchParams();
+      params.append("curPage", page);
+      if (name) params.append("name", name);
+      if (tagName) params.append("tagName", tagName);
+      if (stockStatus) params.append("stockStatus", stockStatus);
 
-      const res = await api.get(q);
+      const res = await api.get(`/products?${params.toString()}`);
+      const data = res.data?.data || [];
 
-      // support both shapes: { data: [...] } or { products: [...] }
-      const data = res.data?.data || res.data?.products || [];
       setProducts(data);
       productsRef.current = data;
-      setTotalPages(res.data?.numberOfPages ?? res.data?.totalPages ?? 1);
+      setTotalPages(res.data?.numberOfPages ?? 1);
       setCurrentPage(res.data?.curPage ?? page);
 
-      // init image indexes for carousel
       const initIdx = {};
-      data.forEach((p) => {
-        initIdx[p._id] = 0;
-      });
+      data.forEach((p) => (initIdx[p._id] = 0));
       setImageIndexMap(initIdx);
     } catch (err) {
       console.error("Fetch products failed:", err);
@@ -63,17 +58,15 @@ export default function Products() {
     }
   };
 
-  // fetch whenever page OR any filter changes
   useEffect(() => {
     mountedRef.current = true;
     fetchProducts(currentPage, { search, tagFilter, statusFilter });
     return () => {
       mountedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, search, tagFilter, statusFilter]);
 
-  // carousel interval: advance imageIndexMap every 3s
+  // 🔁 Auto đổi ảnh
   useEffect(() => {
     const interval = setInterval(() => {
       if (!mountedRef.current) return;
@@ -87,37 +80,10 @@ export default function Products() {
         return next;
       });
     }, 3000);
-
     return () => clearInterval(interval);
   }, []);
 
-  // filter logic kept minimal (since BE does server filtering)
-  const filteredProducts = useMemo(() => {
-    // Because now BE is expected to return already-filtered results,
-    // keep a safety local filter (works on returned page only).
-    let data = [...products];
-    // NOTE: we already pass search/tag/status to BE; this local filter is optional
-    if (search) {
-      data = data.filter((p) =>
-        (p.productName || "").toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    if (tagFilter) {
-      data = data.filter((p) => p.tags?.some((t) => t.nameTag === tagFilter));
-    }
-    if (statusFilter) {
-      data = data.filter((p) => {
-        if (p.quantity <= 0) return statusFilter === "Hết hàng";
-        if (p.quantity <= 5) return statusFilter === "Sắp hết";
-        return statusFilter === "Còn hàng";
-      });
-    }
-    return data;
-  }, [products, search, tagFilter, statusFilter]);
-
-  const currentItems = filteredProducts;
-
-  // toggle selling status (keeps original file1 logic)
+  // Toggle trạng thái bán
   const handleToggleSell = async (id, newStatus) => {
     try {
       await api.put(`/products/${id}`, { status: newStatus });
@@ -129,28 +95,25 @@ export default function Products() {
     }
   };
 
-  // --- handlers: when user changes a filter we go back to page 1 (if not already),
-  // so the BE will return page 1 of filtered results.
+  // --- Filter handlers ---
   const onSearchChange = (e) => {
-    const v = e.target.value;
-    setSearch(v);
-     setCurrentPage(1);
+    setSearch(e.target.value);
+    setCurrentPage(1);
   };
   const onTagChange = (e) => {
-    const v = e.target.value;
-    setTagFilter(v);
-     setCurrentPage(1);
+    setTagFilter(e.target.value);
+    setCurrentPage(1);
   };
   const onStatusChange = (e) => {
-    const v = e.target.value;
-    setStatusFilter(v);
+    setStatusFilter(e.target.value);
     setCurrentPage(1);
   };
 
+  // --- Render ---
   return (
     <div className="p-4 space-y-4">
       {/* Toolbar */}
-      <div className="bg-white p-5 rounded-lg shadow flex items-center gap-5">
+      <div className="bg-white p-5 rounded-lg shadow flex items-center gap-5 flex-wrap">
         <input
           type="text"
           placeholder="Tìm kiếm sản phẩm..."
@@ -172,204 +135,254 @@ export default function Products() {
           <option value="Sắp hết">Sắp hết</option>
           <option value="Hết hàng">Hết hàng</option>
         </select>
-        <button onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")} className="border rounded px-3 py-2">
+        <button
+          onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}
+          className="border rounded px-3 py-2"
+        >
           {viewMode === "grid" ? "Xem dạng bảng" : "Xem dạng lưới"}
         </button>
-        <button onClick={() => setShowAddModal(true)} className="bg-blue-600 text-white rounded px-4 py-2">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-600 text-white rounded px-4 py-2"
+        >
           + Thêm sản phẩm
         </button>
       </div>
 
-      {/* Grid View */}
-      {viewMode === "grid" && (
-        <div className="bg-white p-4 rounded-lg shadow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loading ? (
-            <div className="col-span-3 text-center py-6">Đang tải...</div>
-          ) : (
-            currentItems.map((p) => {
-              const imgs = Array.isArray(p.img) ? p.img : [];
-              const imgIdx = imageIndexMap[p._1d] ?? imageIndexMap[p._id] ?? 0; // fallback safety
-              const qty = p.quantity ?? 0;
+ {/* GRID VIEW */}
+{viewMode === "grid" && (
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow">
+    {loading ? (
+      <div className="col-span-full text-center py-6">Đang tải...</div>
+    ) : products.length === 0 ? (
+      <div className="col-span-full text-center text-gray-500 py-6">Không có sản phẩm</div>
+    ) : (
+      products.map((p) => {
+        const imgs = Array.isArray(p.img) ? p.img : [];
+        const imgIdx = imageIndexMap[p._id] ?? 0;
+        const qty = p.quantity ?? 0;
+        const statusLabel =
+          qty <= 0 ? "Hết hàng" : qty <= 5 ? "Sắp hết" : "Còn hàng";
+        const statusColor =
+          qty <= 0 ? "bg-red-500" : qty <= 5 ? "bg-yellow-500" : "bg-green-500";
 
-              let statusLabel = "";
-              let statusColor = "";
-              if (qty <= 0) {
-                statusLabel = "Hết hàng";
-                statusColor = "bg-red-500";
-              } else if (qty <= 5) {
-                statusLabel = "Sắp hết";
-                statusColor = "bg-yellow-500";
-              } else {
-                statusLabel = "Còn hàng";
-                statusColor = "bg-green-500";
-              }
+        return (
+          <div
+            key={p._id}
+            className="group relative rounded-2xl border border-gray-100 shadow hover:shadow-xl hover:scale-105 transition-transform overflow-hidden"
+          >
+            {/* Image */}
+            <div
+              className="relative h-40 overflow-hidden cursor-pointer"
+              onClick={() => setEditProduct(p)}
+            >
+              {imgs.length ? (
+                imgs.map((url, idx) => {
+                  const active = idx === imgIdx;
+                  return (
+                    <img
+                      key={url + idx}
+                      src={url}
+                      alt={p.productName}
+                      className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
+                        active ? "opacity-100 scale-100" : "opacity-0 scale-110"
+                      }`}
+                    />
+                  );
+                })
+              ) : (
+                <img
+                  src="https://via.placeholder.com/200"
+                  alt="placeholder"
+                  className="w-full h-full object-cover"
+                />
+              )}
 
-              return (
-                <div key={p._id} className="relative group p-[2px] rounded-lg shadow-2xl overflow-visible">
-                  {/* Border gradient */}
-                  <div className="absolute inset-0 rounded-lg p-[2px] 
-                    bg-[conic-gradient(from_0deg,skyblue_0deg,skyblue_40deg,white_60deg,skyblue_80deg,skyblue_360deg)] 
-                    animate-border-spin"></div>
+              {/* Icon mắt mờ hiện hover */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-80 transition">
+                <div className="bg-black bg-opacity-30 w-full h-full absolute"></div>
+                <Eye
+                  size={24}
+                  className="relative text-white cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation(); // tránh trùng với onClick ảnh
+                    setEditProduct(p);
+                  }}
+                />
+              </div>
 
-                  <div className="relative rounded-xl shadow-lg overflow-hidden 
-                    transform transition-transform duration-500 group-hover:scale-115 
-                    group-hover:z-50 group-hover:shadow-2xl">
-                    <div className="absolute inset-0 rounded-xl 
-                      bg-[conic-gradient(from_0deg,white_10deg,skyblue_80deg,skyblue_360deg)] 
-                      animate-spin"></div>
+              {/* Trạng thái kho */}
+              <span
+                className={`absolute top-2 right-2 text-xs text-white px-2 py-1 rounded ${statusColor}`}
+              >
+                {statusLabel}
+              </span>
+            </div>
 
-                    <div className="relative bg-white rounded-xl p-4">
-                      <span className={`absolute top-2 right-2 z-1 px-2 py-1 text-xs text-white rounded ${statusColor}`}>
-  {statusLabel}
-</span>
+            {/* Info */}
+            <div className="p-3">
+              <h3 className="font-semibold text-gray-800 truncate group-hover:text-blue-600">
+                {p.productName}
+              </h3>
+              <p className="text-xs text-gray-500 italic mb-1">
+                Thời trang {p.sex || "Unisex"}
+              </p>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {p.tags?.map((tag) => (
+                  <span
+                    key={tag._id}
+                    className="text-xs bg-gray-100 px-2 py-0.5 rounded-full"
+                  >
+                    {tag.nameTag}
+                  </span>
+                ))}
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-red-600">
+                  {new Intl.NumberFormat("vi-VN").format(p.price)}đ
+                </span>
+                <span className="text-sm text-gray-500">SL: {p.quantity}</span>
+              </div>
 
-                      {/* image carousel */}
-                      <div className="w-full h-40 overflow-hidden rounded">
-                        <div className="relative w-full h-full">
-                          {imgs.length ? (
-                            imgs.map((url, idx) => {
-                              const active = idx === (imageIndexMap[p._id] ?? 0);
-                              return (
-                                <img
-                                  key={url + idx}
-                                  src={url}
-                                  alt={p.productName}
-                                  className={`absolute inset-0 w-full h-full object-cover rounded transition-all duration-700 ease-in-out
-                                    ${active ? "opacity-100 translate-x-0 z-0" : "opacity-0 translate-x-4 z-0"}`}
-                                  style={{ transformOrigin: "center" }}
-                                />
-                              );
-                            })
-                          ) : (
-                            <img src="https://via.placeholder.com/150" alt="placeholder" className="w-full h-full object-cover rounded" />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-2 font-semibold">{p.productName}</div>
-                      <div className="text-xs text-gray-500 italic">Thời Trang {p.sex || "Unisex"}</div>
-
-                      <div className="text-sm text-gray-500">
-                        {p.tags?.map((tag) => (
-                          <span key={tag._id} className="inline-block mr-1 px-2 py-0.5 text-xs bg-gray-100 rounded">
-                            {tag.nameTag}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="text-red-600 font-bold">
-                          {new Intl.NumberFormat("vi-VN").format(p.price)} đ
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Số lượng: {p.quantity}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center">
-                          <div
-                            className={`relative inline-flex h-6 w-12 items-center rounded-full cursor-pointer transition-colors 
-                              ${p.status === "Đang bán" ? "bg-green-500" : "bg-red-500"}`}
-                            onClick={() =>
-                              handleToggleSell(
-                                p._id,
-                                p.status === "Đang bán" ? "Ngưng bán" : "Đang bán"
-                              )
-                            }
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform 
-                              ${p.status === "Đang bán" ? "translate-x-6" : "translate-x-1"}`}
-                            />
-                          </div>
-                          <span className="text-sm ml-2">{p.status}</span>
-                        </div>
-
-                        <div className="flex gap-2 ml-auto">
-                          <button onClick={() => setEditProduct(p)} className="text-blue-600">
-                            <Eye size={18} />
-                          </button>
-                          <button onClick={() => setDeleteProduct(p)} className="text-red-600">
-                            <Trash size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              {/* Toggle trạng thái bán */}
+              <div className="flex items-center gap-2 mt-3">
+                <div
+                  className={`relative inline-flex h-6 w-12 items-center rounded-full cursor-pointer transition-colors ${
+                    p.status === "Đang bán" ? "bg-green-500" : "bg-red-500"
+                  }`}
+                  onClick={() =>
+                    handleToggleSell(
+                      p._id,
+                      p.status === "Đang bán" ? "Ngưng bán" : "Đang bán"
+                    )
+                  }
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      p.status === "Đang bán" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+                <span className="text-sm">{p.status}</span>
 
-      {/* Table View */}
-      {viewMode === "table" && (
-        <div className="p-4 rounded-lg shadow flex items-center overflow-x-auto bg-white">
-          <table className="min-w-full border">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2">Ảnh</th>
-                <th className="p-2">Sản phẩm</th>
-                <th className="p-2">Giá</th>
-                <th className="p-2">Kho</th>
-                <th className="p-2">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((p) => (
-                <tr key={p._id} className="border-b">
-                  <td className="p-2">
-                    <div className="w-16 h-16 relative overflow-hidden rounded">
-                      {Array.isArray(p.img) && p.img.length ? p.img.map((url, idx) => {
-                        const active = idx === (imageIndexMap[p._id] ?? 0);
-                        return (
-                          <img
-                            key={url + idx}
-                            src={url}
-                            alt={p.productName}
-                            className={`absolute inset-0 w-full h-full object-cover rounded transition-all duration-700 ease-in-out
-                              ${active ? "opacity-100 translate-x-0 z-10" : "opacity-0 translate-x-4 z-0"}`}
-                          />
-                        );
-                      }) : (
-                        <img src="https://via.placeholder.com/50" alt="placeholder" className="w-full h-full object-cover rounded"/>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <div className="font-semibold">{p.productName}</div>
-                    <div className="text-sm text-gray-500">{p.tags?.[0]?.nameTag}</div>
-                  </td>
-                  <td className="p-2 text-red-600 font-bold">
-                    {new Intl.NumberFormat("vi-VN").format(p.price)} VNĐ
-                  </td>
-                  <td className="p-2">
-                    {p.quantity === 0 ? (
-                      <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
-                        Hết hàng
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                        Còn {p.quantity} sản phẩm
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-2 flex gap-2 items-center">
-                    <button onClick={() => setEditProduct(p)} className="text-blue-600">
-                      <Eye size={18} />
-                    </button>
-                    <button onClick={() => setDeleteProduct(p)} className="text-red-600">
-                      <Trash size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                {/* Delete button hover */}
+                <div className="ml-auto flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => setDeleteProduct(p)}
+                    className="text-red-600"
+                  >
+                    <Trash size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })
+    )}
+  </div>
+)}
+
+
+      {/* TABLE VIEW */}
+{viewMode === "table" && (
+  <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+    <table className="min-w-full border-collapse border border-gray-200">
+      <thead>
+        <tr className="bg-gray-100 text-left border-b border-gray-300">
+          <th className="p-2 w-[40%]">Sản phẩm</th>
+          <th className="p-2 w-[20%]">Giá</th>
+          <th className="p-2 w-[20%]">Kho</th>
+          <th className="p-2 w-[20%]">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          <tr>
+            <td colSpan={4} className="text-center py-4">Đang tải...</td>
+          </tr>
+        ) : products.length === 0 ? (
+          <tr>
+            <td colSpan={4} className="text-center py-4 text-gray-500">Không có sản phẩm</td>
+          </tr>
+        ) : (
+          products.map((p) => {
+            const qty = p.quantity ?? 0;
+            const statusLabel = qty <= 0 ? "Hết hàng" : qty <= 5 ? "Sắp hết" : "Còn hàng";
+            const statusColor = qty <= 0 ? "bg-red-100 text-red-700" : qty <= 5 ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700";
+
+            return (
+              <tr
+  key={p._id}
+  className="border-b border-gray-200 relative group hover:bg-gray-100 transition-colors duration-200"
+>
+  {/* Tên sản phẩm + ảnh */}
+  <td className="p-2 flex items-center gap-2 max-w-[200px]">
+    <img
+      src={p.img?.[0] || "https://via.placeholder.com/50"}
+      alt={p.productName}
+      className="w-12 h-12 object-cover rounded flex-shrink-0"
+    />
+    <div className="flex-1 text-sm">
+      <span className="hidden sm:inline">{p.productName}</span>
+      <span className="inline sm:hidden truncate">{p.productName}</span>
+    </div>
+  </td>
+
+  {/* Giá */}
+  <td className="p-2 text-red-600 font-bold text-sm">{new Intl.NumberFormat("vi-VN").format(p.price)} đ</td>
+
+  {/* Kho */}
+  <td className="p-2 text-sm">
+    <span className={`${statusColor} px-2 py-1 rounded`}>
+      {window.innerWidth < 640 ? qty : qty <= 0 ? "Hết hàng" : `Còn ${qty} sản phẩm`}
+    </span>
+  </td>
+
+  {/* Toggle trạng thái */}
+  <td className="p-2">
+    <div
+      className={`relative inline-flex h-6 w-12 items-center rounded-full cursor-pointer transition-colors ${p.status === "Đang bán" ? "bg-green-500" : "bg-red-500"}`}
+      onClick={() =>
+        handleToggleSell(p._id, p.status === "Đang bán" ? "Ngưng bán" : "Đang bán")
+      }
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${p.status === "Đang bán" ? "translate-x-6" : "translate-x-1"}`}
+      />
+    </div>
+  </td>
+
+  {/* Hover icons cuối dòng */}
+  <td className="p-2 relative">
+    <div className="absolute inset-0 flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button
+        onClick={() => setEditProduct(p)}
+        className="text-blue-600 p-1 rounded"
+      >
+        <Eye size={20} />
+      </button>
+      <button
+        onClick={() => setDeleteProduct(p)}
+        className="text-red-600 p-1 rounded"
+      >
+        <Trash size={20} />
+      </button>
+    </div>
+  </td>
+</tr>
+
+            );
+          })
+        )}
+      </tbody>
+    </table>
+  </div>
+)}
+
+
+
+
 
       {/* Pagination */}
       <div className="flex justify-center mt-4 gap-2">
@@ -400,19 +413,26 @@ export default function Products() {
 
       {/* Modals */}
       {showAddModal && (
-        <AddProductModal open={true} onClose={() => setShowAddModal(false)} onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })} products={products} />
+        <AddProductModal
+          open={true}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })}
+        />
       )}
       {editProduct && (
-        <EditProductModal product={editProduct} onClose={() => setEditProduct(null)} onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })} />
+        <EditProductModal
+          product={editProduct}
+          onClose={() => setEditProduct(null)}
+          onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })}
+        />
       )}
       {deleteProduct && (
-        <DeleteProductModal product={deleteProduct} onClose={() => setDeleteProduct(null)} onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })} />
+        <DeleteProductModal
+          product={deleteProduct}
+          onClose={() => setDeleteProduct(null)}
+          onSuccess={() => fetchProducts(currentPage, { search, tagFilter, statusFilter })}
+        />
       )}
-
-      <style>{`
-        .translate-x-4 { transform: translateX(1rem); }
-        .translate-x-0 { transform: translateX(0); }
-      `}</style>
     </div>
   );
 }

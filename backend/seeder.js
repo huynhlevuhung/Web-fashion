@@ -21,7 +21,7 @@ mongoose
 
 const importData = async () => {
   try {
-    await Product.deleteMany(); // nếu muốn xóa trước
+    //await Product.deleteMany(); // nếu muốn xóa trước
     await Product.insertMany(products);
     console.log("Seeder data imported ✅");
     process.exit();
@@ -32,3 +32,5 @@ const importData = async () => {
 };
 
 importData();
+
+
