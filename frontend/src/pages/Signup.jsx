@@ -112,7 +112,7 @@ export default function Signup() {
               <Input
                 label="Tên đăng nhập"
                 name="username"
-                placeholder="congbang1234"
+                placeholder="Ex: username"
                 value={form.username}
                 onChange={handleChange}
               />

@@ -51,21 +51,21 @@ getAllProducts: async (req, res) => {
     const ITEMS_PER_PAGE = 16;
 
     const {
-      tagName,     // 🔹 lọc theo tên tag
+      tagName,     
       name = "",
       sex,
       minPrice,
       maxPrice,
-      stockStatus, // "Hết hàng" | "Sắp hết" | "Còn hàng"
-      sort,        // FE gửi key "sort" (không phải "sortBy")
+      stockStatus,
+      sort,        
     } = req.query;
 
-    // 1️⃣ Tạo object filter
+   
     const filter = {};
 
-    // 🔹 Lọc theo tag (từ FE gửi có thể là tagName hoặc tagId)
+   
     if (tagName) {
-      // Nếu FE gửi _id tag thay vì name, ta kiểm tra hợp lệ
+     
       if (tagName.match(/^[0-9a-fA-F]{24}$/)) {
         filter.tags = { $in: [tagName] };
       } else {
