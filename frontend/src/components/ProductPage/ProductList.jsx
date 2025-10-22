@@ -156,11 +156,13 @@ const ProductList = ({ filters, onCounts }) => {
 // 🧩 Product Card
 const ProductCard = ({ product, onOpenDetail }) => {
   const resolveImageUrl = (url) => {
-    if (!url) return "/placeholder.jpg";
-    if (url.startsWith("http")) return url;
-    const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-    return `${BASE_URL}/${url.replace(/^\/+/, "")}`;
-  };
+  if (!url) return "/placeholder.jpg";
+  if (url.startsWith("data:image")) return url; // ✅ Base64 giữ nguyên
+  if (url.startsWith("http") || url.startsWith("data:image")) return url;// ✅ URL đầy đủ
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  return `${BASE_URL}/${url.replace(/^\/+/, "")}`; // ✅ Ảnh từ uploads
+};
+
 
   const [currentImg, setCurrentImg] = useState(
     resolveImageUrl(

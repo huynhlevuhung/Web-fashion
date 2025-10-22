@@ -323,15 +323,15 @@ export default function UserLayout() {
         /* spotlight chạy ngang, dùng transform (GPU) => mượt, không reflow */
         .header-row::before {
   content: "";
-  position: absolute;
+  //position: absolute;
    inset: 0;
-  transform: translateX(-140%);
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.8) 50%,   /* đậm hơn */
-    rgba(255, 255, 255, 0) 100%
-  );
+  //transform: translateX(-140%);
+  // background: linear-gradient(
+  //   90deg,
+  //   rgba(255, 255, 255, 0) 0%,
+  //   rgba(255, 255, 255, 0.8) 50%,   /* đậm hơn */
+  //   rgba(255, 255, 255, 0) 100%
+  // );
    background-size: 100% 100%;
   filter: blur(6px);   /* nét hơn */
   pointer-events: none;

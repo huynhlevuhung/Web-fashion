@@ -38,7 +38,7 @@ export default function Products() {
       if (tagName) params.append("tagName", tagName);
       if (stockStatus) params.append("stockStatus", stockStatus);
 
-      const res = await api.get(`/products?${params.toString()}`);
+      const res = await api.get(`/products/admin?${params.toString()}`);
       const data = res.data?.data || [];
 
       setProducts(data);

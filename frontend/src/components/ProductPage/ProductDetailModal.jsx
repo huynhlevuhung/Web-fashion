@@ -28,7 +28,7 @@ import {
 
 const resolveImageUrl = (url) => {
   if (!url) return "/placeholder.jpg";
-  if (url.startsWith("http")) return url;
+  if (url.startsWith("http") || url.startsWith("data:image")) return url;
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   return `${BASE_URL}/${url.replace(/^\/+/, "")}`;
 };

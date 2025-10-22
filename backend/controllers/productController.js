@@ -110,6 +110,124 @@ getAllProducts: async (req, res) => {
       }
     }
 
+    filter.status = "Đang bán";
+    // 2️⃣ Tuỳ chọn sắp xếp
+    let sortOption = { createdAt: -1 };
+    if (sort) {
+      switch (sort) {
+        case "priceAsc":
+          sortOption = { price: 1 };
+          break;
+        case "priceDesc":
+          sortOption = { price: -1 };
+          break;
+        case "nameAsc":
+          sortOption = { productName: 1 };
+          break;
+        case "nameDesc":
+          sortOption = { productName: -1 };
+          break;
+        default:
+          sortOption = { createdAt: -1 };
+      }
+    }
+
+    // 3️⃣ Đếm tổng số sản phẩm sau lọc
+    const totalItems = await ProductModel.countDocuments(filter);
+    const numberOfPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    // 4️⃣ Reset trang nếu vượt giới hạn
+    const currentPage =
+      curPage > numberOfPages && numberOfPages > 0 ? 1 : curPage;
+
+    // 5️⃣ Lấy dữ liệu
+    const data = await ProductModel.find(filter)
+      .populate("tags")
+      .sort(sortOption)
+      .skip((currentPage - 1) * ITEMS_PER_PAGE)
+      .limit(ITEMS_PER_PAGE);
+
+    // 6️⃣ Trả kết quả
+    res.status(200).send({
+      message: "Success",
+      data,
+      numberOfPages,
+      curPage: currentPage,
+      totalItems,
+      currentCount: data.length, // ✅ FE hiển thị “Hiển thị X / Y”
+    });
+  } catch (error) {
+    res.status(500).send({ message: "Error", error: error.message });
+  }
+},
+
+
+getAllProductsAdmin: async (req, res) => {
+  try {
+    const curPage = parseInt(req.query.curPage) || 1;
+    const ITEMS_PER_PAGE = 16;
+
+    const {
+      tagName,     
+      name = "",
+      sex,
+      minPrice,
+      maxPrice,
+      stockStatus,
+      sort,        
+    } = req.query;
+
+   
+    const filter = {};
+
+   
+    if (tagName) {
+     
+      if (tagName.match(/^[0-9a-fA-F]{24}$/)) {
+        filter.tags = { $in: [tagName] };
+      } else {
+        const tag = await TagModel.findOne({
+          nameTag: { $regex: tagName, $options: "i" },
+        });
+        if (tag) {
+          filter.tags = { $in: [tag._id] };
+        } else {
+          return res.status(200).send({
+            message: "Success",
+            data: [],
+            numberOfPages: 0,
+            curPage: 1,
+            totalItems: 0,
+          });
+        }
+      }
+    }
+
+    // 🔹 Lọc theo tên sản phẩm
+    if (name) filter.productName = { $regex: name, $options: "i" };
+
+    // 🔹 Lọc theo giới tính
+    if (sex) filter.sex = sex;
+
+    // 🔹 Lọc theo giá
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    // 🔹 Lọc theo tình trạng kho
+    if (stockStatus) {
+      if (stockStatus === "Hết hàng") {
+        filter.quantity = { $lte: 0 };
+      } else if (stockStatus === "Sắp hết") {
+        filter.quantity = { $gt: 0, $lte: 5 };
+      } else if (stockStatus === "Còn hàng") {
+        filter.quantity = { $gt: 5 };
+      }
+    }
+
+    
     // 2️⃣ Tuỳ chọn sắp xếp
     let sortOption = { createdAt: -1 };
     if (sort) {

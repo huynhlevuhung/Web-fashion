@@ -12,8 +12,8 @@ const Sidebar = ({ onFilterChange, products = [], filters = {} }) => {
   const [showPrice, setShowPrice] = useState(true);
 
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(5000000);
-  const [sliderValue, setSliderValue] = useState(5000000);
+  const [maxPrice, setMaxPrice] = useState(2000000);
+  const [sliderValue, setSliderValue] = useState(2000000);
   const [filterFromValueUp, setFilterFromValueUp] = useState(false);
 
   // 🧭 Lấy danh sách Tag

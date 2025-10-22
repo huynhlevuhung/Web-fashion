@@ -7,6 +7,7 @@ const router = Router();
 router.post("/", productController.createProduct);
 
 // Read
+router.get("/admin", productController.getAllProductsAdmin);
 router.get("/all", productController.getAllProductsNoPaging);
 router.get("/", productController.getAllProducts);
 router.get("/most-favourite", productController.getMostFavouriteProducts);

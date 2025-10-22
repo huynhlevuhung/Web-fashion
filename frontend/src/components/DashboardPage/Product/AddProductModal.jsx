@@ -75,7 +75,7 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
         return;
       }
 
-      const res = await api.post("/products", formData);
+      const res = await api.post("/products/", formData);
       console.log("Thêm sản phẩm thành công:", res.data);
 
       onClose();
