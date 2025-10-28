@@ -50,7 +50,7 @@ const Footer = () => {
             rel="noopener noreferrer"
             className="flex items-center justify-center md:justify-start gap-2 hover:text-blue-500 transition"
           >
-            <Facebook size={18} /> /vuhung.boy
+            <Facebook size={18} /> Admin Fashion Store
           </a>
         </div>
       </div>

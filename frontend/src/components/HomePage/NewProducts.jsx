@@ -1,3 +1,4 @@
+// src/components/HomePage/NewProducts.jsx
 import React, { useEffect, useState } from "react";
 import { ShoppingCart, Heart, Eye } from "lucide-react";
 import api from "@/utils/api";
@@ -8,7 +9,7 @@ import ProductDetailModal from "@/components/ProductPage/ProductDetailModal";
 const formatPrice = (price) =>
   price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫";
 
-// --- Hàm chọn ngẫu nhiên N phần tử trong mảng (chuẩn Fisher–Yates) ---
+// --- Hàm chọn ngẫu nhiên N phần tử trong mảng ---
 const getRandomProducts = (arr, count) => {
   const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -22,16 +23,34 @@ const NewProducts = () => {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [likedProducts, setLikedProducts] = useState(new Set());
   const navigate = useNavigate();
 
-  // tạm chưa có user login
-  const userId = null;
+  // 🧠 Lấy user từ localStorage
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        setUser(storedUser ? JSON.parse(storedUser) : null);
+      } catch {
+        setUser(null);
+      }
+    };
+    loadUser();
+    window.addEventListener("storage", loadUser);
+    window.addEventListener("userUpdated", loadUser);
+    return () => {
+      window.removeEventListener("storage", loadUser);
+      window.removeEventListener("userUpdated", loadUser);
+    };
+  }, []);
 
-  // ✅ Fetch tất cả sản phẩm và chọn ngẫu nhiên 12 cái
+  // ✅ Fetch tất cả sản phẩm
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await api.get("/products/all"); // ⚙️ đảm bảo backend có endpoint /products/all
+        const res = await api.get("/products/all");
         const data = res.data.data || res.data;
         const random12 = getRandomProducts(data, 12);
         setProducts(random12);
@@ -42,31 +61,107 @@ const NewProducts = () => {
     fetchProducts();
   }, []);
 
-  // --- Icon actions ---
-  const handleAddToCart = (product) => {
-    if (!userId) {
-      console.log("Chưa đăng nhập — sẽ chuyển login sau");
-      return;
-    }
-    console.log("Thêm vào giỏ hàng:", product._id);
+  // --- Xử lý animation fly-to-cart ---
+  const createFlyAnimation = (imgSrc, startX, startY) => {
+    const flyImg = document.createElement("img");
+    flyImg.src = imgSrc;
+    flyImg.style.position = "fixed";
+    flyImg.style.left = `${startX}px`;
+    flyImg.style.top = `${startY}px`;
+    flyImg.style.width = "80px";
+    flyImg.style.height = "80px";
+    flyImg.style.borderRadius = "50%";
+    flyImg.style.objectFit = "cover";
+    flyImg.style.zIndex = 9999;
+    flyImg.style.transition =
+      "all 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19)";
+    document.body.appendChild(flyImg);
+
+    // Vị trí giỏ hàng ở góc phải trên
+    const targetX = window.innerWidth - 60;
+    const targetY = 20;
+
+    requestAnimationFrame(() => {
+      flyImg.style.left = `${targetX}px`;
+      flyImg.style.top = `${targetY}px`;
+      flyImg.style.width = "20px";
+      flyImg.style.height = "20px";
+      flyImg.style.opacity = "0.3";
+    });
+
+    setTimeout(() => flyImg.remove(), 700);
   };
 
+  // --- Xử lý thêm giỏ hàng ---
+  const handleAddToCart = async (product, e) => {
+    // dừng bubble sớm
+    e.stopPropagation();
+
+    if (!user?.id) {
+      navigate("/login");
+      return;
+    }
+
+    // --- LẤY VỊ TRÍ NGAY LẬP TỨC trước khi await (fix lỗi event null) ---
+    let startLeft = 0;
+    let startTop = 0;
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+    } catch (err) {
+      // fallback: trung tâm màn hình nếu không lấy được
+      startLeft = window.innerWidth / 2;
+      startTop = window.innerHeight / 2;
+    }
+
+    try {
+      // gọi API thêm vào cart
+      await api.post(`/carts/${user.id}`, { productId: product._id, quantity: 1 });
+
+      // tạo hiệu ứng bay lên dùng tọa độ đã lưu
+      createFlyAnimation(product.img?.[0] || "/fallback.jpg", startLeft, startTop);
+    } catch (err) {
+      console.error("Lỗi thêm vào giỏ hàng:", err);
+    }
+  };
+
+  // --- Xử lý mở modal xem chi tiết ---
   const handleView = (product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  const handleLike = (product) => {
-    if (!userId) {
+  // --- Xử lý thêm vào wishlist ---
+  const handleLike = async (product, e) => {
+    e.stopPropagation();
+
+    if (!user?.id) {
       navigate("/login");
       return;
     }
-    navigate(`/wishlist/${userId}`);
+
+    try {
+      await api.post("/wishlist/add", {
+        userId: user.id,
+        productId: product._id,
+      });
+
+      // Cập nhật trạng thái liked
+      setLikedProducts((prev) => {
+        const updated = new Set(prev);
+        if (updated.has(product._id)) updated.delete(product._id);
+        else updated.add(product._id);
+        return updated;
+      });
+    } catch (err) {
+      console.error("Lỗi thêm vào wishlist:", err);
+    }
   };
 
-  // ✅ Khi click "Xem thêm" → chuyển sang trang ProductPage.jsx
+  // --- Chuyển đến trang tất cả sản phẩm ---
   const handleViewMore = () => {
-    navigate("/products"); // 👈 đảm bảo bạn có route này trong App.jsx
+    navigate("/products");
   };
 
   return (
@@ -101,6 +196,8 @@ const NewProducts = () => {
             product.img?.[Math.floor(Math.random() * product.img.length)] ||
             "/fallback.jpg";
 
+          const isLiked = likedProducts.has(product._id);
+
           return (
             <div
               key={product._id}
@@ -120,10 +217,7 @@ const NewProducts = () => {
                 {/* Icon hover */}
                 <div className="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(product);
-                    }}
+                    onClick={(e) => handleAddToCart(product, e)}
                     className="p-2 bg-white/40 backdrop-blur-sm rounded-full shadow hover:bg-white/60 transition"
                     title="Thêm vào giỏ"
                   >
@@ -142,14 +236,19 @@ const NewProducts = () => {
                   </button>
 
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLike(product);
-                    }}
-                    className="p-2 bg-white/40 backdrop-blur-sm rounded-full shadow hover:bg-white/60 transition"
+                    onClick={(e) => handleLike(product, e)}
+                    className={`p-2 backdrop-blur-sm rounded-full shadow transition ${
+                      isLiked
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-white/40 hover:bg-white/60"
+                    }`}
                     title="Yêu thích"
                   >
-                    <Heart className="w-5 h-5 text-white" />
+                    <Heart
+                      className={`w-5 h-5 ${
+                        isLiked ? "text-white fill-white" : "text-white"
+                      }`}
+                    />
                   </button>
                 </div>
               </div>

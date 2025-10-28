@@ -6,7 +6,7 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
     },
 
-    note: { type: String},
+    note: [{ type: String}],
     
     deliveryAddress: { type: String, required: true },
     products: {

@@ -13,6 +13,7 @@ import promotionsRouter from "./routes/promotionRoutes.js";
 import tagsRouter from "./routes/tagRoutes.js";
 import cartsRouter from "./routes/cartRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
 // Utils
 import globalErrorHandle from "./controllers/errorController.js";
 import AppError from "./utils/appError.js";
@@ -56,6 +57,7 @@ app.use("/api/users", userRouter);
 app.use("/api/products", productRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/api/orders", orderRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -19,7 +20,10 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
 
+  const location = useLocation();
+const isHome = location.pathname === "/";
   // ✅ Load user từ localStorage
   useEffect(() => {
     const loadUser = () => {
@@ -87,6 +91,14 @@ const Navbar = () => {
 };
 
 
+useEffect(() => {
+  const handleScroll = () => {
+    setIsScrolled(window.scrollY > 0);
+  };
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+
   // ✅ Cart click
   const handleCartClick = () => {
     if (!user) navigate("/login");
@@ -121,11 +133,17 @@ const Navbar = () => {
 
 
   return (
-    <nav
-      className={`fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-md transition-transform duration-500 ${
-        showNav ? "translate-y-0" : "-translate-y-full"
-      }`}
-    >
+  <nav
+  className={`w-full z-50 transition-all duration-500 ${
+    isHome
+      ? "fixed top-0 bg-white shadow-md"
+      : isScrolled
+      ? "fixed top-0 bg-white/80 backdrop-blur-md shadow-md"
+      : "relative bg-white shadow-sm"
+  } ${showNav ? "translate-y-0" : "-translate-y-full"}`}
+>
+
+
       <div className="flex items-center justify-between px-6 py-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
