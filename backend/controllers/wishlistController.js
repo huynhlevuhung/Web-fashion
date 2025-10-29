@@ -71,24 +71,37 @@ addToWishlist: async (req, res) => {
 
 
   // 🟢 Xóa sản phẩm khỏi wishlist
-  removeFromWishlist: async (req, res) => {
-    try {
-      const { userId, productId } = req.body;
-      const wishlist = await WishlistModel.findOne({ user: userId });
-      if (!wishlist) {
-        return res.status(404).json({ message: "Không tìm thấy wishlist" });
-      }
+removeFromWishlist: async (req, res) => {
+  try {
+    const { userId, productId } = req.params; // lấy từ URL thay vì body
 
-      wishlist.items = wishlist.items.filter(
-        (item) => item.product.toString() !== productId
-      );
-      await wishlist.save();
-
-      res.status(200).json({ message: "Đã xóa sản phẩm khỏi wishlist", wishlist });
-    } catch (error) {
-      res.status(500).json({ message: "Lỗi khi xóa khỏi wishlist", error });
+    const wishlist = await WishlistModel.findOne({ user: userId });
+    if (!wishlist) {
+      return res.status(404).json({ message: "Không tìm thấy wishlist" });
     }
-  },
+
+    // Lọc bỏ sản phẩm cần xóa
+    const beforeCount = wishlist.items.length;
+    wishlist.items = wishlist.items.filter(
+      (item) => item.product.toString() !== productId.toString()
+    );
+
+    if (wishlist.items.length === beforeCount) {
+      return res.status(404).json({ message: "Sản phẩm không có trong wishlist" });
+    }
+
+    await wishlist.save();
+
+    res.status(200).json({
+      message: "Đã xóa sản phẩm khỏi wishlist",
+      wishlist,
+    });
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa wishlist:", error);
+    res.status(500).json({ message: "Lỗi khi xóa khỏi wishlist", error });
+  }
+},
+
 
   // 🟢 Xóa toàn bộ wishlist
   clearWishlist: async (req, res) => {

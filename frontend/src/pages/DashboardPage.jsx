@@ -8,6 +8,7 @@ import UserLayout from "../components/DashboardPage/User/UserLayout";
 import ProductLayout from "../components/DashboardPage/Product/ProductLayout";
 import TransactionLayout from "../components/DashboardPage/Transaction/TransactionLayout";
 import SettingsLayout from "../components/DashboardPage/Setting/SettingLayout";
+import StoreLayout from "../components/DashboardPage/Store/StoreLayout";
 
 const DashboardPage = () => {
   const [navbarHeight, setNavbarHeight] = useState(0);
@@ -57,6 +58,7 @@ const DashboardPage = () => {
             <Route path="dashboard" element={<DashboardLayout />} />
             <Route path="users" element={<UserLayout />} />
             <Route path="products" element={<ProductLayout />} />
+            <Route path="stores" element={<StoreLayout/>} />
             <Route path="transactions" element={<TransactionLayout />} />
             <Route path="settings" element={<SettingsLayout />} />
           </Routes>

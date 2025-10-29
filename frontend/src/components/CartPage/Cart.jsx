@@ -106,63 +106,76 @@ const Cart = () => {
   const deselectAll = () => setSelectedIds(new Set());
 
   // 🧾 Tạo order
-  const createOrderAndRemove = async ({ fromSelected = false }) => {
-    if (!user?.id) return;
-    if (!deliveryAddress.trim()) {
-      alert("Vui lòng nhập địa chỉ giao hàng!");
+ const createOrderAndRemove = async ({ fromSelected = false }) => {
+  if (!user?.id) return;
+  if (processing) return; // tránh double click
+  if (!deliveryAddress.trim()) {
+    alert("Vui lòng nhập địa chỉ giao hàng!");
+    return;
+  }
+
+  setProcessing(true);
+  try {
+    // 🔒 Lấy snapshot của cart và selectedIds tại thời điểm bấm
+    const currentCart = cart || { items: [] };
+    const currentSelected = new Set(selectedIds);
+
+    const itemsToOrder = fromSelected
+      ? currentCart.items.filter((it) => currentSelected.has(it.product?._id))
+      : currentCart.items;
+
+    if (!itemsToOrder.length) {
+      alert("Không có sản phẩm nào được chọn!");
+      setProcessing(false);
       return;
     }
 
-    setProcessing(true);
-    try {
-      const itemsToOrder = fromSelected
-        ? cart.items.filter((it) => selectedIds.has(it.product?._id))
-        : cart.items;
+    const orderPayload = {
+      buyer: user.id,
+      deliveryAddress,
+      note: note ? [note] : [],
+      products: itemsToOrder.map((it) => ({
+        product: it.product?._id,
+        quantity: it.quantity,
+        price: it.product?.price,
+      })),
+      totalPrice: itemsToOrder.reduce(
+        (sum, it) => sum + (it.product?.price || 0) * it.quantity,
+        0
+      ),
+    };
 
-      if (!itemsToOrder.length) {
-        setProcessing(false);
-        setModalVisible(false);
-        return;
-      }
+    // 🧾 Tạo đơn hàng
+    const res = await api.post("/orders", orderPayload);
+    if (!res?.data) throw new Error("Không nhận được phản hồi từ server.");
 
-      const orderPayload = {
-        buyer: user.id,
-        deliveryAddress,
-        note: note ? [note] : [],
-        products: itemsToOrder.map((it) => ({
-          product: it.product?._id,
-          quantity: it.quantity,
-          price: it.product?.price,
-        })),
-        totalPrice: itemsToOrder.reduce(
-          (sum, it) => sum + (it.product?.price || 0) * it.quantity,
-          0
-        ),
-      };
-
-      await api.post("/orders", orderPayload);
-
-      // Xóa cart
-      if (fromSelected) {
-        const ids = itemsToOrder.map((it) => it.product?._id);
-        await Promise.all(ids.map((pid) => api.delete(`/carts/${user.id}/${pid}`)));
-      } else {
-        await api.delete(`/carts/${user.id}/clear/all`);
-      }
-
-      alert("Đặt hàng thành công!");
-      setModalVisible(false);
-      setDeliveryAddress("");
-      setNote("");
-      await fetchCart();
-    } catch (err) {
-      console.error("Lỗi khi tạo đơn hàng:", err);
-      alert("Tạo đơn hàng thất bại!");
-    } finally {
-      setProcessing(false);
-      setModalAction(null);
+    // 🗑 Xóa sản phẩm trong cart
+    if (fromSelected) {
+      const ids = itemsToOrder.map((it) => it.product?._id);
+      await Promise.all(
+        ids.map((pid) => api.delete(`/carts/${user.id}/${pid}`))
+      );
+    } else {
+      await api.delete(`/carts/${user.id}/clear/all`);
     }
-  };
+
+    // ✅ Thành công
+    alert("Đặt hàng thành công!");
+    setModalVisible(false);
+    setDeliveryAddress("");
+    setNote("");
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    await fetchCart();
+  } catch (err) {
+    console.error("❌ Lỗi khi tạo đơn hàng:", err);
+    alert("Tạo đơn hàng thất bại! Vui lòng thử lại.");
+  } finally {
+    setProcessing(false);
+    setModalAction(null);
+  }
+};
+
 
   // 🧮 Tổng kết
   const selectedItems =
@@ -450,16 +463,18 @@ const Cart = () => {
                     Hủy
                   </button>
                   <button
-                    onClick={() =>
-                      createOrderAndRemove({
-                        fromSelected: modalAction === "checkout-selected",
-                      })
-                    }
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    disabled={processing}
-                  >
-                    {processing ? "Đang xử lý..." : "Xác nhận mua"}
-                  </button>
+  onClick={() => {
+    if (processing) return;
+    createOrderAndRemove({
+      fromSelected: modalAction === "checkout-selected",
+    });
+  }}
+  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+  disabled={processing}
+>
+  {processing ? "Đang xử lý..." : "Xác nhận mua"}
+</button>
+
                 </div>
               </>
             )}

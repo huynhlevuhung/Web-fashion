@@ -209,6 +209,7 @@ export default function AddProductModal({ open, onClose, onSuccess }) {
             <option value="Unisex">Unisex</option>
             <option value="Nam">Nam</option>
             <option value="Nữ">Nữ</option>
+            <option value="Trẻ em">Trẻ Em</option>
           </select>
 
           <div className="flex justify-end gap-3">

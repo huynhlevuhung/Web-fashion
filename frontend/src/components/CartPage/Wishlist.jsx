@@ -93,9 +93,7 @@ const Wishlist = () => {
     const uid = getUserId();
     if (!uid) return;
     try {
-      await api.delete(`/wishlist/remove`, {
-        data: { userId: uid, productId },
-      });
+      await api.delete(`/wishlist/remove/${uid}/${productId}`);
       setWishlist((prev) => ({
         ...prev,
         items: prev.items.filter((i) => {

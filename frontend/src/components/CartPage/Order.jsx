@@ -427,7 +427,7 @@ const Order = () => {
               window.location.href = "/cart";
             }}
           >
-            Tiếp tục thanh toán
+            Tiếp tục mua sắm 
           </button>
         </div>
       </div>
