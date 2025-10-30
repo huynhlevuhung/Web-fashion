@@ -67,9 +67,15 @@ app.use("/api/promotions", promotionsRouter);
 app.use("/api/tags", tagsRouter);
 
 // ------------------- 404 Not Found -------------------
+app.get("/", (req, res) => {
+  res.send("✅ Backend server is running on Render!");
+});
+
+// ------------------- 404 Not Found -------------------
 app.use((req, res, next) => {
   next(new AppError(`Không tìm thấy ${req.originalUrl} trên server này!`, 404));
 });
+
 
 // ------------------- Global Error Handler -------------------
 app.use(globalErrorHandle);
