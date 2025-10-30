@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "../components/HomePage/Navbar";
-import Sidebar from "../components/ProductPage/Sidebar";
+import Sidebar from "../components/ProductPage/SideBar";
 import ProductList from "../components/ProductPage/ProductList";
 import SearchBar from "../components/ProductPage/SearchBar";
 
