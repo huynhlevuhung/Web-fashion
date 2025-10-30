@@ -7,7 +7,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gray-900 text-gray-300 py-10 px-6 md:px-12">
+    <footer id="footer-section" className="bg-gray-900 text-gray-300 py-10 px-6 md:px-12">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
         {/* Logo */}
         <div

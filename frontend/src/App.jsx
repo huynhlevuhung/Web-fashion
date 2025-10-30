@@ -12,12 +12,15 @@ import DashboardPage from "./pages/DashboardPage";
 import UserPage from "./pages/UserPage";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
+import AboutPage from "./pages/AboutPage";
+
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/products" element={<ProductPage />} />
+<Route path="/about" element={<AboutPage />} />
 
       {/* Các route public (chỉ vào được nếu CHƯA đăng nhập) */}
      <Route

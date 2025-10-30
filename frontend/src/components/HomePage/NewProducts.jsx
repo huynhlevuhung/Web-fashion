@@ -5,6 +5,7 @@ import api from "@/utils/api";
 import { useNavigate } from "react-router-dom";
 import ProductDetailModal from "@/components/ProductPage/ProductDetailModal";
 
+
 // --- Định dạng giá tiền ---
 const formatPrice = (price) =>
   price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫";

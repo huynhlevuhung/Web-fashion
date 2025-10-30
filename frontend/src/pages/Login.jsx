@@ -35,7 +35,7 @@ export default function Login() {
       localStorage.setItem("role", user.role);
       localStorage.setItem("id", user.id);
       window.dispatchEvent(new Event("userUpdated"));
-
+       window.dispatchEvent(new Event("cartUpdated"));
       toast.success("Đăng nhập thành công");
       navigate(user.role === "admin" || user.role === "seller" ? "/dashboard" : "/");
     } catch (err) {
@@ -126,7 +126,7 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="flex items-center justify-center gap-3">
+        {/* <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => handleSocialLogin("Facebook")}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
@@ -141,7 +141,7 @@ export default function Login() {
             <Mail size={18} />
             Google
           </button>
-        </div>
+        </div> */}
 
         <p className="text-sm text-gray-600 text-center">
           Chưa có tài khoản?{" "}

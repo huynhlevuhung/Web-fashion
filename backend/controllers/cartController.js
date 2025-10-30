@@ -12,32 +12,30 @@ const calculateTotalPrice = (items) => {
 
 const cartController = {
   // 📗 Lấy giỏ hàng của user theo id
-  getCartByUser: async (req, res) => {
-    try {
-      const userId = req.params.id;
+    getCartByUser: async (req, res) => {
+  try {
+    const userId = req.params.id;
+    let cart = await CartModel.findOne({ user: userId }).populate(
+      "items.product",
+      "productName price img"
+    );
 
-      const cart = await CartModel.findOne({ user: userId }).populate(
-        "items.product",
-        "productName price img"
-      );
-
-      if (!cart || cart.items.length === 0) {
-        return res.status(200).json({
-          message: "Cart is empty",
-          cart: { items: [], totalPrice: 0 },
-        });
-      }
-
-      const totalPrice = calculateTotalPrice(cart.items);
-      res.status(200).json({
-        message: "Fetched cart successfully",
-        cart: { ...cart._doc, totalPrice },
-      });
-    } catch (error) {
-      console.error("Error fetching cart:", error);
-      res.status(500).json({ message: "Failed to fetch cart", error });
+   
+    if (!cart) {
+      cart = await CartModel.create({ user: userId, items: [], totalPrice: 0 });
     }
-  },
+
+    const totalPrice = calculateTotalPrice(cart.items || []);
+    res.status(200).json({
+      message: "Fetched cart successfully",
+      cart: { ...cart._doc, totalPrice },
+    });
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    res.status(500).json({ message: "Failed to fetch cart", error });
+  }
+},
+
 
     getAllCarts: async (req, res) => {
     try {
@@ -58,7 +56,6 @@ const cartController = {
     }
   },
 
-  // 🛒 Thêm sản phẩm
  // 🛒 Thêm sản phẩm
 addToCart: async (req, res) => {
   try {
@@ -122,7 +119,6 @@ addToCart: async (req, res) => {
     });
   }
 },
-
 
 
   // ✏️ Cập nhật số lượng sản phẩm

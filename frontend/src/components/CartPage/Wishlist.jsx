@@ -53,6 +53,34 @@ const Wishlist = () => {
     };
   };
 
+
+  const createFlyAnimation = (imgSrc, startX, startY) => {
+  const flyImg = document.createElement("img");
+  flyImg.src = imgSrc;
+  flyImg.style.position = "fixed";
+  flyImg.style.left = `${startX}px`;
+  flyImg.style.top = `${startY}px`;
+  flyImg.style.width = "80px";
+  flyImg.style.height = "80px";
+  flyImg.style.borderRadius = "50%";
+  flyImg.style.objectFit = "cover";
+  flyImg.style.zIndex = 9999;
+  flyImg.style.transition = "all 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19)";
+  document.body.appendChild(flyImg);
+
+  const targetX = window.innerWidth - 60;
+  const targetY = 20;
+
+  requestAnimationFrame(() => {
+    flyImg.style.left = `${targetX}px`;
+    flyImg.style.top = `${targetY}px`;
+    flyImg.style.width = "20px";
+    flyImg.style.height = "20px";
+    flyImg.style.opacity = "0.3";
+  });
+
+  setTimeout(() => flyImg.remove(), 700);
+};
   const fetchWishlist = async () => {
     const uid = getUserId();
     if (!uid) return;
@@ -76,17 +104,33 @@ const Wishlist = () => {
   }, [user]);
 
   // 🛒 Thêm vào giỏ hàng
-  const handleAddToCart = async (productId) => {
-    const uid = getUserId();
-    if (!uid) return alert("Vui lòng đăng nhập");
-    try {
-      await api.post(`/carts/${uid}`, { productId, quantity: 1 });
-      alert("Đã thêm sản phẩm vào giỏ hàng!");
-    } catch (err) {
-      console.error("Lỗi khi thêm vào giỏ hàng:", err);
-      alert("Không thể thêm sản phẩm vào giỏ hàng.");
-    }
-  };
+  const handleAddToCart = async (product, e) => {
+  e.stopPropagation();
+  const uid = getUserId();
+  if (!uid) {
+    window.location.href = "/login";
+    return;
+  }
+
+  // lấy vị trí để bay
+  let startLeft = 0, startTop = 0;
+  try {
+    const rect = e.currentTarget.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop = rect.top;
+  } catch {
+    startLeft = window.innerWidth / 2;
+    startTop = window.innerHeight / 2;
+  }
+
+  try {
+    await api.post(`/carts/${uid}`, { productId: product._id, quantity: 1 });
+    createFlyAnimation(product.img?.[0] || "/placeholder.jpg", startLeft, startTop);
+  } catch (err) {
+    console.error("Lỗi khi thêm vào giỏ hàng:", err);
+  }
+};
+
 
   // ❌ Xóa sản phẩm khỏi wishlist
   const handleRemoveItem = async (productId) => {
@@ -207,10 +251,8 @@ const Wishlist = () => {
     {/* 🛒 Nếu còn hàng → hiển thị nút giỏ hàng */}
     {qty > 0 && (
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleAddToCart(pid);
-        }}
+        onClick={(e) => handleAddToCart(product, e)}
+
         className="p-2 bg-white/40 backdrop-blur-sm rounded-full shadow hover:bg-white/60 transition"
         title="Thêm vào giỏ hàng"
       >

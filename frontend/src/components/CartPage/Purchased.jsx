@@ -242,10 +242,13 @@
       );
 
     return (
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto p-4 sm:p-6">
+
+
         {/* Danh sách đơn hàng */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
-          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+        <div className="flex-1 flex flex-col gap-5">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 flex items-center gap-2">
+
             <ClipboardList className="text-blue-600" /> Đơn hàng của bạn
           </h2>
 
@@ -254,8 +257,8 @@
             return (
               <div
                 key={orderId}
-                className="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-all duration-300"
-              >
+                className="border rounded-2xl p-4 sm:p-5 bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+>
                 <div className="flex justify-between items-center border-b pb-2 mb-3">
                   <div className="flex items-center gap-2 text-gray-700">
                     <Package size={18} />
@@ -264,7 +267,8 @@
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openReorderModal(order)}
-                      className="ml-2 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 text-sm"
+                     className="ml-0 sm:ml-2 mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 text-sm w-full sm:w-auto justify-center"
+
                     >
                       <Repeat size={16} /> Đặt lại
                     </button>
@@ -285,12 +289,12 @@
                     return (
                       <div
                         key={idx}
-                        className="flex items-center gap-4 border-b last:border-none pb-3"
+                        className="flex items-center gap-3 sm:gap-4 border-b last:border-none pb-3 flex-wrap sm:flex-nowrap"
                       >
                         <img
                           src={img}
                           alt={prod?.productName || "product"}
-                          className="w-20 h-20 object-cover rounded-md"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg shadow-sm"
                         />
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-800">
@@ -356,8 +360,10 @@
         </div>
 
         {/* Tổng kết đơn hàng (sticky) */}
-        <div className="h-fit">
-          <div className="bg-white border rounded-xl shadow-sm p-5 sticky top-20">
+        <div className="w-full lg:w-[340px] shrink-0">
+  <div className="bg-white border rounded-2xl shadow-md p-5 sticky top-24 sm:top-28 transition-all">
+
+
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <ShoppingBag className="text-green-600" /> Tổng kết đơn hàng
             </h3>
@@ -394,7 +400,8 @@
               onClick={closeModal}
               aria-hidden
             />
-            <div className="relative z-10 w-full max-w-md bg-white rounded-lg p-6 shadow-lg">
+            <div className="relative z-10 w-full max-w-md bg-white rounded-2xl p-6 shadow-lg animate-scaleIn animate-fadeIn">
+
               <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <MapPin /> Đổi địa chỉ / Thêm ghi chú
               </h4>
@@ -430,7 +437,8 @@
               onClick={() => setIsReorderModalOpen(false)}
               aria-hidden
             />
-            <div className="relative z-10 w-full max-w-md bg-white rounded-lg p-6 shadow-lg">
+            <div className="relative z-10 w-full max-w-md bg-white rounded-2xl p-6 shadow-lg animate-scaleIn animate-fadeIn">
+
               <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Repeat /> Xác nhận đặt lại
               </h4>

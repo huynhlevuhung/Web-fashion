@@ -15,7 +15,18 @@ const ProductList = ({ filters, onCounts }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [buyNowProduct, setBuyNowProduct] = useState(null);
 
+
   const navigate = useNavigate();
+
+
+
+  useEffect(() => {
+  const handleOpenModal = (e) => {
+    setSelectedProduct(e.detail);
+  };
+  window.addEventListener("openProductModal", handleOpenModal);
+  return () => window.removeEventListener("openProductModal", handleOpenModal);
+}, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -169,9 +180,7 @@ const img = Array.isArray(product.img) && product.img.length
     if (!user) return navigate("/login");
     try {
       if (heartActive) {
-        await api.delete(`/wishlist/remove`, {
-          data: { userId: user.id, productId: product._id },
-        });
+        await api.delete(`/wishlist/remove${user._id}`);
       } else {
         await api.post(`/wishlist/add`, {
           userId: user.id,
@@ -354,47 +363,62 @@ const BuyNowModal = ({ product, user, onClose }) => {
       await api.post("/orders", {
         buyer: user.id,
         deliveryAddress: address,
-        products: [{ productId: product._id, quantity: 1, price: product.price }],
-        note,
+        products: [
+          {
+            product: product._id, // 🔹
+            quantity: 1,
+            price: product.price,
+          },
+        ],
+        note: note ? [note] : [],
         status: "đang chờ",
       });
       onClose();
     } catch (err) {
       console.error("Lỗi tạo đơn:", err);
+       alert("❌ Tạo đơn hàng thất bại. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+   return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
       <div className="bg-white p-6 rounded-xl w-96 shadow-lg">
-        <h2 className="text-lg font-semibold mb-3">
+        <h2 className="text-lg font-semibold mb-3 text-center">
           Mua ngay: {product.productName}
         </h2>
-        <input
-          type="text"
-          placeholder="Địa chỉ giao hàng..."
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="w-full border p-2 rounded mb-3 text-sm"
-        />
-        <textarea
-          placeholder="Ghi chú (tùy chọn)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full border p-2 rounded mb-3 text-sm"
-        />
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-1 border rounded">
+
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Nhập địa chỉ giao hàng..."
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <textarea
+            placeholder="Ghi chú cho người bán (tùy chọn)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 border rounded-md text-gray-600 hover:bg-gray-100"
+          >
             Hủy
           </button>
           <button
             disabled={loading}
             onClick={handleConfirm}
-            className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? "Đang xử lý..." : "Xác nhận"}
+            {loading ? "Đang xử lý..." : "Xác nhận đặt hàng"}
           </button>
         </div>
       </div>

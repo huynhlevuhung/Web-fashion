@@ -4,6 +4,8 @@ import orderController from "../controllers/orderController.js";
 
 const router = express.Router();
 
+
+router.get("/:id", orderController.getOrderById);
 // 🧾 Tạo & lấy tất cả đơn hàng (có lọc, tìm, lọc theo tháng)
 router.route("/")
   .get(orderController.getAllOrders)

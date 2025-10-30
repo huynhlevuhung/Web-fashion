@@ -289,6 +289,15 @@ updateOrderStatusByAdmin: catchAsync(async (req, res, next) => {
     if (!order) return next(new AppError("Không tìm thấy đơn hàng để xóa.", 404));
     res.status(204).json({ status: "success", data: null });
   }),
+  getOrderById: catchAsync(async (req, res, next) => {
+  const order = await Order.findById(req.params.id)
+    .populate("buyer", "fullname email phone")
+    .populate("products.product", "productName img price");
+  if (!order) return next(new AppError("Không tìm thấy đơn hàng.", 404));
+  res.status(200).json({ status: "success", data: order });
+}),
 };
+
+
 
 export default orderController;

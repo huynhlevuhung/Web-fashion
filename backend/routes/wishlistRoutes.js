@@ -8,9 +8,9 @@ router.get("/", wishlistController.getAllWishlists);
 router.get("/:userId", wishlistController.getWishlistByUser);
 
 // 🧠 Thêm sản phẩm vào wishlist
-router.post("/add", wishlistController.addToWishlist);
+    router.post("/add", wishlistController.addToWishlist);
 
-// ✅ Xóa 1 sản phẩm khỏi wishlist (phải đặt TRƯỚC route /remove)
+// ✅ Xóa 1 sản phẩm khỏi wishlist 
 router.delete("/remove/:userId/:productId", wishlistController.removeFromWishlist);
 
 // 🧹 Xóa toàn bộ wishlist

@@ -3,11 +3,13 @@ import React, { useEffect, useState } from "react";
 import { X, Loader2, Trash2, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/utils/api";
+import useToast from "@/hooks/useToast"; // 🧃 hook toast
 
 const NotesModal = ({ isOpen, order, onClose }) => {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   // 🟢 Lấy ghi chú khi modal mở
   useEffect(() => {
@@ -19,6 +21,7 @@ const NotesModal = ({ isOpen, order, onClose }) => {
         setNotes(res.data?.data?.note || []);
       } catch (err) {
         console.error("Fetch notes error:", err);
+        toast.error("Không thể tải ghi chú 😢");
         setNotes([]);
       } finally {
         setLoading(false);
@@ -27,30 +30,34 @@ const NotesModal = ({ isOpen, order, onClose }) => {
     fetchNotes();
   }, [isOpen, order?._id]);
 
+  // 🟡 Thêm ghi chú
   const handleAddNote = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim()) return toast.warning("Vui lòng nhập nội dung ghi chú ✍️");
     try {
       setLoading(true);
-      const res = await api.post(`/orders/${order._id}/note`, { note: newNote });
+      const res = await api.post(`/orders/${order._id}/notes`, { note: newNote });
       setNotes(res.data?.data?.note || []);
       setNewNote("");
+      toast.success("Đã thêm ghi chú 📝");
     } catch (err) {
       console.error("❌ Lỗi khi thêm ghi chú:", err);
-      alert("Thêm ghi chú thất bại.");
+      toast.error("Thêm ghi chú thất bại 😢");
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔴 Xóa ghi chú (đảm bảo chắc chắn xóa được)
   const handleDeleteNote = async (index) => {
-    if (!window.confirm("Xóa ghi chú này?")) return;
+    if (!window.confirm("Bạn có chắc muốn xóa ghi chú này?")) return;
     try {
       setLoading(true);
-      const res = await api.delete(`/orders/${order._id}/note/${index}`);
+      const res = await api.delete(`/orders/${order._id}/notes/${index}`);
       setNotes(res.data?.data?.note || []);
+      toast.success("Đã xóa ghi chú 🗑️");
     } catch (err) {
       console.error("❌ Lỗi khi xóa ghi chú:", err);
-      alert("Xóa ghi chú thất bại.");
+      toast.error("Xóa ghi chú thất bại 😢");
     } finally {
       setLoading(false);
     }
@@ -99,9 +106,7 @@ const NotesModal = ({ isOpen, order, onClose }) => {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
                       >
-                        <span className="text-sm text-gray-700 break-words">
-                          {n}
-                        </span>
+                        <span className="text-sm text-gray-700 break-words">{n}</span>
                         <Trash2
                           size={16}
                           onClick={() => handleDeleteNote(i)}
