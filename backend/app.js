@@ -28,11 +28,14 @@ const app = express();
 // CORS linh hoạt
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (origin.startsWith("http://localhost")) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://web-fashion-4lr0.onrender.com", // 
+    ],
+    credentials: true,
+  })
+);
     credentials: true,
   })
 );
